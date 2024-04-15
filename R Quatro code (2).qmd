@@ -1,0 +1,93 @@
+
+```{r}
+install.packages(rnaturalearth)
+install.packages(rnaturalearthdata)
+install.packages(sf)
+install.packages(ggplot2)
+library(rnaturalearth)
+library(sf)
+library(ggplot2)
+my_data <- read.csv("unicef_metadata.csv")
+```
+
+
+```{r}
+# Assuming we are using life_expectancy_at_birth_total_years as the average observation value (avg_value)
+# and we are plotting for a specific year, let's say the most recent year in the dataset
+# Assuming df is a data frame and not a function or a different type of object
+
+# The error message suggests that 'df' is not a data frame but a function or a reserved word in R.
+# Let's try to clear any existing 'df' function and assume that 'df' is a data frame provided for this task.
+current_names <- colnames(my_data)
+
+new_names <- gsub("[^A-Za-z0-9]+", "_", current_names)
+
+colnames(my_data) <- new_names
+# Now, let's try to get the most recent year again
+selected_year <- my_data[my_data$year == max(my_data$year, na.rm = TRUE), ]
+
+selected_data <- my_data[my_data$year == selected_year, ]
+# Load world countries with 'ne_countries' from rnaturalearth
+world_map <- ne_countries(scale = "medium", type = 'countries', returnclass = "sf")
+
+# Merge your data
+map_data <- merge(world_map, my_data, by.x = "iso_a3", by.y = "alpha_3_code", all.x = TRUE)
+
+# Plot the map
+ggplot(map_data) +
+  geom_sf(aes(fill = Life_expectancy_at_birth_total_years_, geometry = geometry)) + # ensure geometry is used
+  scale_fill_gradient(name = "Life Expectancy", low = "blue", high = "red") +
+  labs(title = paste("Life Expectancy at Birth Across Countries (Year:", max(my_data$year, na.rm = TRUE), ")"),
+       fill = "Life Expectancy",
+       caption = "Source: Your Data Source") +
+  theme_minimal() +
+  theme(legend.position = "right")
+
+```
+
+
+```{r}
+# Bar Chart 
+
+top_10_2022_asc <- my_data %>%
+  dplyr::filter(year == 2022) %>%
+  dplyr::arrange(GDP_per_capita_constant_2015_US_) %>%
+  dplyr::slice_head(n = 10)
+
+
+ggplot(top_10_2022_asc, aes(x = reorder(country, GDP_per_capita_constant_2015_US_), y = GDP_per_capita_constant_2015_US_)) +
+  geom_bar(stat = "identity", fill = "red") +
+  labs(x = "Country", y = "GDP per Capita (constant 2015 US$)",
+       title = "10 Countries with the Smallest GDP per Capita in 2022") +
+  theme_minimal() +
+coord_flip()
+
+```
+
+
+
+```{r}
+library(ggplot2)
+
+# Assuming we want to plot life_expectancy_at_birth_total_years vs gdp_per_capita_constant_2015_us
+scatterplot <- ggplot(my_data, aes(x = GDP_per_capita_constant_2015_US_, y = Life_expectancy_at_birth_total_years_)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "blue", se = FALSE) +
+  labs(x = "GDP per Capita (constant 2015 US$)", y = "Life Expectancy at Birth (years)", title = "Scatterplot with Linear Regression Line") +
+  theme_minimal()
+
+# Print the scatterplot
+print(scatterplot)
+```
+
+```{r}
+# Time-series chart
+time_series <- ggplot(my_data, aes(x = year, y = GDP_per_capita_constant_2015_US_, group = country)) +
+  geom_line() +
+  labs(x = "Year", y = "GDP per Capita (constant 2015 US$)", title = "GDP per Capita over Time") +
+  theme_minimal()
+
+# Print the time-series chart
+print(time_series)
+```
+
